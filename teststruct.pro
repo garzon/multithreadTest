@@ -7,7 +7,7 @@ CONFIG += c++11
 SOURCES += main.cpp
 
 HEADERS += \
-    ../system_struct.h
+    system_struct.h
 
 
 LIBS += /usr/local/lib/libopencv_calib3d.so \

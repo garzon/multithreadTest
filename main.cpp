@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cstdio>
 
-#include "../system_struct.h"
+#include "system_struct.h"
 
 using namespace std;
 
