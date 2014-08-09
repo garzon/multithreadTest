@@ -1,5 +1,7 @@
 //Each probe has its own queue.Each element is a object shared_data.
 
+#ifndef SYSTEM_STRUCT_H
+#define SYSTEM_STRUCT_H
 
 #include <opencv2/opencv.hpp>
 
@@ -128,3 +130,6 @@ public:
     }
 
 };
+
+
+#endif
