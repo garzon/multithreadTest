@@ -33,7 +33,7 @@ public:
     void run(){
         string x;
         ThreadProcessor<string,string> tp1(ThreadData<string>(cond,tasks,Mutex,finished),step1);
-        ThreadProcessor<string,string> tp2(tp1.output(),step2,output);
+        ThreadProcessor<string,string> tp2(tp1.output(),step2);
         while(!((x=readData()).empty())){
             {
                 lock_guard<mutex> lock(Mutex);
@@ -46,7 +46,7 @@ public:
         cond.notify_all();
         tp1.join();
         tp2.join();
-        for(auto &x: output){
+        for(auto &x: tp2.results){
             cout<<x<<endl;
         }
     }
