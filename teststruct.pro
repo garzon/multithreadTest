@@ -9,7 +9,8 @@ SOURCES += main.cpp
 HEADERS += \
     system_struct.h \
     ThreadManager.h \
-    ThreadProcessor.h
+    ThreadProcessor.h \
+    ThreadWorker.h
 
 
 LIBS += /usr/local/lib/libopencv_calib3d.so \

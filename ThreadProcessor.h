@@ -35,46 +35,60 @@ public:
 
     condition_variable cond_out;
     mutex mutex_out;
-    deque<OutputType> results;
+    deque<OutputType> &results,results_out;
     FuncType func;
 
     thread thisThread;
 
-    ThreadProcessor(ThreadData<InputType> _input,FuncType _func):
-        input(_input), func(_func),finished(false),
+private:
 
-        thisThread(
-            // sub thread function
-            [this](){
-                    while(true){
-                        printf("sth");
-                        unique_lock<mutex> lock(input.mutex_in);
-                        if(input.finished&&(input.tasks.empty()))
-                        {
-                            finished=true;
-                            cond_out.notify_all();
-                            break;
-                        }
-                        if(!input.finished&&(input.tasks.empty()))
-                            input.cond_in.wait(lock);        // sleep and wait for notification from main thread
-                        while(!input.tasks.empty()){      // when not empty, process the data in the queue pushed by main thread
-                            if(!lock.owns_lock()) lock.lock();
-                            InputType x(move(input.tasks.front()));   // copy construction - copy data from the queue to x
-                            input.tasks.pop_front();
-                            lock.unlock();          // there is no need to lock the queue when processing data, so unlock
-                            deque<OutputType> &&res=func(x);
-                            {
-                                lock_guard<mutex> lock_output(mutex_out);
-                                for(auto &&y: res)
-                                    results.push_back(y);
-                                cond_out.notify_all();
-                            }
-                        }
-                    }
+    void worker(){
+        // sub thread function
+        while(true){
+            unique_lock<mutex> lock(input.mutex_in);
+            if(input.finished&&(input.tasks.empty()))
+            {
+                finished=true;
+                cond_out.notify_all();
+                break;
             }
-        )
+            if(!input.finished&&(input.tasks.empty()))
+                input.cond_in.wait(lock);     // sleep and wait for notification
+            while(!input.tasks.empty()){      // while not empty, process the data in the queue
+                if(!lock.owns_lock()) lock.lock();
+                InputType x(move(input.tasks.front()));   // move construction - move data from the queue to x
+                input.tasks.pop_front();
+                lock.unlock();            // there is no need to lock the queue when processing data, so unlock
+                deque<OutputType> &&res=func(x);  // now processing...
+                {
+                    lock_guard<mutex> lock_output(mutex_out);
+                    for(auto &&y: res)
+                        results.push_back(y);
+                    cond_out.notify_all();
+                }
+            }
+        }
+    }
 
+public:
+
+    ThreadProcessor(ThreadData<InputType> _input,FuncType _func):
+        input(_input), func(_func),finished(false),results(results_out),
+        thisThread(
+            mem_fn(&ThreadProcessor<InputType,OutputType>::worker),this
+        )
     {}
+
+    ThreadProcessor(ThreadData<InputType> _input,FuncType _func,deque<OutputType> &_results_out):
+        input(_input), func(_func),finished(false),results(_results_out),
+        thisThread(
+            mem_fn(&ThreadProcessor<InputType,OutputType>::worker),this
+        )
+    {}
+
+    void join(){
+        thisThread.join();
+    }
 
     ThreadData<OutputType> output(){
         return ThreadData<OutputType>(cond_out,results,mutex_out,finished);
